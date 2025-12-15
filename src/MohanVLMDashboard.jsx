@@ -28,6 +28,9 @@ import {
   Filter,
   Mail,
   AlertCircle,
+  Coffee,
+  MessageSquare,
+  Users,
 } from 'lucide-react';
 
 // --- Styles & Animation ---
@@ -236,6 +239,121 @@ const WORKFLOW_INSIGHTS = {
   },
 };
 
+// Team Pulse mock data
+const HEALTH_METRICS = [
+  {
+    id: 'm1',
+    label: 'Deep Work Ratio',
+    value: '32%',
+    trend: '-5%',
+    trendDir: 'down', // down is bad
+    status: 'Warning',
+    icon: BrainCircuit,
+    description: 'Time spent in uninterrupted production blocks (>30m)',
+  },
+  {
+    id: 'm2',
+    label: 'Context Fragmentation',
+    value: 'High',
+    subValue: '28 switches/hr',
+    trend: '+12%',
+    trendDir: 'up', // up is bad
+    status: 'Critical',
+    icon: Zap,
+    description: 'Average frequency of application toggling per hour',
+  },
+  {
+    id: 'm3',
+    label: 'Meeting Load',
+    value: '4.5h',
+    subValue: 'per day/person',
+    trend: '+0.5h',
+    trendDir: 'up', // up is bad
+    status: 'Critical',
+    icon: Users,
+    description: 'Average time spent in Zoom/Teams calls',
+  },
+  {
+    id: 'm4',
+    label: 'Burnout Risk',
+    value: 'Medium',
+    subValue: '15% after-hours',
+    trend: 'Stable',
+    trendDir: 'flat',
+    status: 'Healthy',
+    icon: Activity,
+    description: 'Percentage of workforce active after 8:00 PM',
+  },
+];
+
+const DEPT_COMPOSITION = [
+  {
+    name: 'Engineering',
+    focus: 45, // Green
+    collab: 25, // Yellow
+    friction: 30, // Red
+    totalMembers: 42,
+    details: 'High friction detected in deployment phases.',
+  },
+  {
+    name: 'Product',
+    focus: 20,
+    collab: 60,
+    friction: 20,
+    totalMembers: 12,
+    details: 'Meeting overload is severely impacting maker time.',
+  },
+  {
+    name: 'Sales',
+    focus: 15,
+    collab: 45,
+    friction: 40,
+    totalMembers: 28,
+    details: 'Administrative data entry is consuming 40% of capacity.',
+  },
+  {
+    name: 'Marketing',
+    focus: 40,
+    collab: 40,
+    friction: 20,
+    totalMembers: 8,
+    details: 'Balanced workflow, but high Slack distraction.',
+  },
+];
+
+const TEAM_INSIGHTS = [
+  {
+    id: 'i1',
+    dept: 'Engineering',
+    type: 'Tool Fatigue',
+    severity: 'High',
+    title: 'IDE Context Switching',
+    content:
+      'Engineers are switching between VS Code and Jira/Slack approx. 40 times/hour. This reduces cognitive depth by estimated 25%.',
+    action: 'Recommendation: Enable Jira integration for VS Code.',
+  },
+  {
+    id: 'i2',
+    dept: 'Product',
+    type: 'Meeting Overload',
+    severity: 'Critical',
+    title: 'Fragmented Maker Time',
+    content:
+      'Designers average only 1 continuous block of >2h focus time per week due to scattered stand-ups and syncs.',
+    action: "Recommendation: Implement 'No Meeting Wednesdays'.",
+  },
+  {
+    id: 'i3',
+    dept: 'Sales',
+    type: 'Process Friction',
+    severity: 'High',
+    title: 'CRM Data Entry Lag',
+    content:
+      "Sales reps spend 2.5h/day manually copying data from Email to Salesforce. This is classified as 'Drift'.",
+    action: 'Recommendation: Automate email logging.',
+  },
+];
+
 const METRICS_DATA = [
   {
     title: 'Avg Cycle Time',
@@ -300,6 +418,7 @@ export default function MohanFinalDashboard() {
   const [selectedTraceId, setSelectedTraceId] = useState('TRC-9201'); // Workflow 选中的 trace
   const [selectedStageId, setSelectedStageId] = useState('stage-03'); // Workflow 选中的 stage
   const [workflowFilterText, setWorkflowFilterText] = useState('');
+  const [selectedDept, setSelectedDept] = useState('Engineering'); // Team Pulse 选中的部门
 
   const inputRef = useRef(null);
   const activeDriftDetail = DRIFT_DETAILS[selectedDrift];
@@ -313,6 +432,9 @@ export default function MohanFinalDashboard() {
           WORKFLOW_TIMELINE.stages.find((s) => s.id === selectedStageId)?.insightKey || ''
         ]
       : null;
+  const activeTeamInsights = selectedDept
+    ? TEAM_INSIGHTS.filter((i) => i.dept === selectedDept)
+    : TEAM_INSIGHTS;
 
   useEffect(() => {
     setMounted(true);
@@ -1461,6 +1583,227 @@ export default function MohanFinalDashboard() {
                 </section>
               </div>
             </section>
+          </div>
+        ) : activeTab === 'Team Pulse' ? (
+          <div className="space-y-8">
+            {/* Header */}
+            <header
+              className={`mb-2 transition-all duration-700 transform ${
+                mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+              }`}
+            >
+              <div className="flex items-center text-sm text-gray-500 mb-2">
+                <span>Organization</span>
+                <ArrowRight className="w-4 h-4 mx-2" />
+                <span className="font-medium text-slate-900">Team Pulse</span>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">Organizational Health</h1>
+                  <p className="text-gray-500 mt-1 text-sm">
+                    Real-time analysis of work patterns, capacity, and friction.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-[11px] text-gray-400 bg-white/80 px-3 py-1.5 rounded-full border border-white/70 shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Live System Signals • Privacy Protected (Aggregated)</span>
+                </div>
+              </div>
+            </header>
+
+            {/* Vitals cards */}
+            <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {HEALTH_METRICS.map((metric, idx) => (
+                <div
+                  key={metric.id}
+                  className={`${GLASS_CARD} p-5 flex flex-col justify-between cursor-default card-fade-in`}
+                  style={{ animationDelay: `${80 + idx * 60}ms` }}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        metric.status === 'Critical'
+                          ? 'bg-rose-50 text-rose-600'
+                          : metric.status === 'Warning'
+                          ? 'bg-amber-50 text-amber-600'
+                          : 'bg-emerald-50 text-emerald-600'
+                      }`}
+                    >
+                      <metric.icon className="w-5 h-5" />
+                    </div>
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                        metric.trendDir === 'down' && metric.id === 'm1'
+                          ? 'bg-rose-50 text-rose-600'
+                          : metric.trendDir === 'up'
+                          ? 'bg-rose-50 text-rose-600'
+                          : 'bg-emerald-50 text-emerald-600'
+                      }`}
+                    >
+                      {metric.trend}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">
+                      {metric.label}
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">{metric.value}</div>
+                    {metric.subValue && (
+                      <div className="text-xs text-slate-500 mt-1">{metric.subValue}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Work composition */}
+              <section
+                className="lg:col-span-2 card-fade-in"
+                style={{ animationDelay: '80ms' }}
+              >
+                <div className={`${GLASS_CARD} p-6 cursor-default`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-lg font-bold text-slate-900">Work Composition by Team</h2>
+                    <div className="flex space-x-4 text-xs text-slate-600">
+                      <div className="flex items-center">
+                        <span className="w-3 h-3 bg-emerald-500 rounded-sm mr-2" />
+                        Deep Work (Focus)
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-3 h-3 bg-amber-400 rounded-sm mr-2" />
+                        Collaboration
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-3 h-3 bg-rose-400 rounded-sm mr-2" />
+                        Friction / Admin
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    {DEPT_COMPOSITION.map((dept) => (
+                      <div
+                        key={dept.name}
+                        onClick={() => setSelectedDept(dept.name)}
+                        className={`group cursor-pointer p-4 rounded-xl border transition-all duration-200 ${
+                          selectedDept === dept.name
+                            ? 'bg-blue-50/40 border-blue-200 ring-1 ring-blue-100'
+                            : 'bg-white/70 border-transparent hover:bg-white/90'
+                        }`}
+                      >
+                        <div className="flex justify-between text-sm mb-2">
+                          <div className="flex items-center">
+                            <span
+                              className={`font-bold ${
+                                selectedDept === dept.name ? 'text-blue-700' : 'text-slate-700'
+                              }`}
+                            >
+                              {dept.name}
+                            </span>
+                            <span className="text-gray-400 text-xs ml-2">
+                              ({dept.totalMembers} members)
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400 group-hover:text-slate-600">
+                            Click to analyze
+                          </span>
+                        </div>
+                        <div className="h-4 w-full flex rounded-full overflow-hidden opacity-90 group-hover:opacity-100 group-hover:shadow-sm">
+                          <div
+                            style={{ width: `${dept.focus}%` }}
+                            className="bg-emerald-500 h-full"
+                          />
+                          <div
+                            style={{ width: `${dept.collab}%` }}
+                            className="bg-amber-400 h-full"
+                          />
+                          <div
+                            style={{ width: `${dept.friction}%` }}
+                            className="bg-rose-400 h-full relative"
+                          >
+                            <div
+                              className="absolute inset-0 opacity-20"
+                              style={{
+                                backgroundImage:
+                                  'linear-gradient(45deg, #000 25%, transparent 25%, transparent 50%, #000 50%, #000 75%, transparent 75%, transparent)',
+                                backgroundSize: '6px 6px',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-gray-400 mt-2 font-medium">
+                          <span>{dept.focus}% Focus</span>
+                          <span>{dept.friction}% Friction</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Insights panel */}
+              <section className="lg:col-span-1 card-fade-in" style={{ animationDelay: '120ms' }}>
+                <div className="bg-slate-900 text-white rounded-xl shadow-lg p-6 h-full flex flex-col">
+                  <div className="flex items-center mb-6 border-b border-slate-700 pb-4">
+                    <LayoutGrid className="w-5 h-5 text-blue-400 mr-2" />
+                    <h3 className="font-bold text-lg">Friction Analysis</h3>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Viewing Context
+                    </span>
+                    <div className="text-xl font-bold text-blue-100 mt-1 flex items-center flex-wrap gap-2">
+                      {selectedDept} Team
+                      {selectedDept === 'Engineering' && (
+                        <span className="text-xs bg-rose-500/20 text-rose-200 px-2 py-0.5 rounded border border-rose-500/30">
+                          High Load
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
+                    {activeTeamInsights.length === 0 ? (
+                      <div className="text-slate-500 text-sm text-center py-10">
+                        No critical friction detected for this team.
+                      </div>
+                    ) : (
+                      activeTeamInsights.map((insight) => (
+                        <div
+                          key={insight.id}
+                          className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 hover:border-slate-600 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-[11px] font-bold text-amber-400 px-2 py-0.5 bg-amber-400/10 rounded uppercase">
+                              {insight.type}
+                            </span>
+                            {insight.severity === 'Critical' && (
+                              <AlertTriangle className="w-4 h-4 text-rose-400" />
+                            )}
+                          </div>
+                          <h4 className="font-bold text-sm text-white mb-2">{insight.title}</h4>
+                          <p className="text-xs text-slate-300 leading-relaxed mb-3">
+                            {insight.content}
+                          </p>
+                          <div className="pt-3 border-t border-slate-700/50">
+                            <div className="flex items-start">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400 mt-0.5 mr-2 flex-shrink-0" />
+                              <span className="text-xs text-emerald-100/80 italic">
+                                {insight.action}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-700 text-center">
+                    <button className="text-xs text-slate-400 hover:text-white flex items-center justify-center w-full">
+                      View Full Report <ArrowRight className="w-3 h-3 ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-center h-[500px] text-slate-400">
