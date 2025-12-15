@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   LayoutGrid,
   Target,
@@ -25,6 +25,9 @@ import {
   CheckCircle2,
   MonitorX,
   FileText,
+  Filter,
+  Mail,
+  AlertCircle,
 } from 'lucide-react';
 
 // --- Styles & Animation ---
@@ -129,6 +132,110 @@ const DRIFT_DETAILS = {
   },
 };
 
+// Workflow Trace mock data
+const TRACE_LIST = [
+  {
+    id: 'TRC-9201',
+    title: 'Acme Corp - Contract Renewal',
+    type: 'Contract Approval',
+    startTime: 'Oct 12, 09:00',
+    duration: '14d 5h',
+    status: 'Critical', // Critical, Warning, Success
+    owner: 'Sarah J.',
+    latency: '+380%',
+  },
+  {
+    id: 'TRC-9202',
+    title: 'Q3 Feature Deployment #402',
+    type: 'DevOps Pipeline',
+    startTime: 'Oct 12, 11:30',
+    duration: '45m',
+    status: 'Success',
+    owner: 'DevOps Bot',
+    latency: 'Normal',
+  },
+  {
+    id: 'TRC-9203',
+    title: 'Senior Engineer Hiring: Candidate A',
+    type: 'Hiring Pipeline',
+    startTime: 'Oct 10, 14:00',
+    duration: '5d 2h',
+    status: 'Warning',
+    owner: 'HR Team',
+    latency: '+15%',
+  },
+];
+
+const WORKFLOW_TIMELINE = {
+  id: 'TRC-9201',
+  summary: {
+    totalDuration: '14d 5h',
+    expectedDuration: '3d 0h',
+    bottleneckStage: 'Legal Review',
+  },
+  stages: [
+    {
+      id: 'stage-01',
+      name: 'Draft Creation',
+      tool: 'Salesforce CPQ',
+      duration: '2h 15m',
+      type: 'active',
+      owner: 'Sarah J.',
+      timelineWidth: '5%',
+      timelineOffset: '0%',
+    },
+    {
+      id: 'stage-02',
+      name: 'Manager Approval',
+      tool: 'Slack / Email',
+      duration: '4h 0m',
+      type: 'queue',
+      owner: 'Mike Ross',
+      timelineWidth: '8%',
+      timelineOffset: '5%',
+    },
+    {
+      id: 'stage-03',
+      name: 'Legal Review',
+      tool: 'Outlook / Word',
+      duration: '12d 6h',
+      type: 'blocked',
+      owner: 'Legal Dept',
+      timelineWidth: '75%',
+      timelineOffset: '13%',
+      alert: true,
+      insightKey: 'legal_block',
+    },
+    {
+      id: 'stage-04',
+      name: 'Client Signature',
+      tool: 'DocuSign',
+      duration: 'Pending',
+      type: 'pending',
+      owner: 'External',
+      timelineWidth: '10%',
+      timelineOffset: '88%',
+    },
+  ],
+};
+
+const WORKFLOW_INSIGHTS = {
+  legal_block: {
+    title: 'Unstructured Communication Loop',
+    severity: 'High',
+    impact: '12 Days Lost',
+    rootCause: 'Toolchain Break (Salesforce ➔ Email)',
+    observation:
+      "VLM analysis detected 14 email exchanges containing file attachments named 'Contract_v1' through 'Contract_v14'. No version control system was used.",
+    evidence: [
+      { type: 'email', label: 'Subject: Re: Re: Changes to Section 4...' },
+      { type: 'file', label: 'Attachment: Acme_Renewal_v14_FINAL.docx' },
+    ],
+    recommendation:
+      "Migrate this account's renewal process to the CLM (Contract Lifecycle Management) module to enforce version control.",
+  },
+};
+
 const METRICS_DATA = [
   {
     title: 'Avg Cycle Time',
@@ -190,9 +297,22 @@ export default function MohanFinalDashboard() {
   ); // 顶部三张卡片的展示数字（只在页面加载时滚动一次）
   const [showProfileMenu, setShowProfileMenu] = useState(false); // 侧边栏个人菜单
   const [selectedDrift, setSelectedDrift] = useState('eng_drift'); // Strategy Trace 选中的 drift
+  const [selectedTraceId, setSelectedTraceId] = useState('TRC-9201'); // Workflow 选中的 trace
+  const [selectedStageId, setSelectedStageId] = useState('stage-03'); // Workflow 选中的 stage
+  const [workflowFilterText, setWorkflowFilterText] = useState('');
 
   const inputRef = useRef(null);
   const activeDriftDetail = DRIFT_DETAILS[selectedDrift];
+  const activeWorkflowInsight =
+    selectedStageId &&
+    WORKFLOW_TIMELINE.stages.find((s) => s.id === selectedStageId)?.alert &&
+    WORKFLOW_INSIGHTS[
+      WORKFLOW_TIMELINE.stages.find((s) => s.id === selectedStageId)?.insightKey || ''
+    ]
+      ? WORKFLOW_INSIGHTS[
+          WORKFLOW_TIMELINE.stages.find((s) => s.id === selectedStageId)?.insightKey || ''
+        ]
+      : null;
 
   useEffect(() => {
     setMounted(true);
@@ -855,7 +975,10 @@ export default function MohanFinalDashboard() {
           <div className="space-y-8">
             {/* Strategy context */}
             <section className="mt-2">
-              <div className={`${GLASS_CARD} p-6 flex flex-col md:flex-row md:items-start md:justify-between gap-6 cursor-default`}>
+               <div
+                 className={`${GLASS_CARD} p-6 flex flex-col md:flex-row md:items-start md:justify-between gap-6 cursor-default card-fade-in`}
+                 style={{ animationDelay: '80ms' }}
+               >
                 <div>
                   <div className="flex items-center space-x-3 mb-2">
                     <h1 className="text-2xl font-bold text-slate-900">{STRATEGY_DATA.name}</h1>
@@ -912,10 +1035,11 @@ export default function MohanFinalDashboard() {
               </div>
 
               <div className="space-y-4">
-                {TRACE_DATA.map((dept) => (
+                {TRACE_DATA.map((dept, idx) => (
                   <div
                     key={dept.id}
-                    className={`${GLASS_CARD} p-5 cursor-default`}
+                    className={`${GLASS_CARD} p-5 cursor-default card-fade-in`}
+                    style={{ animationDelay: `${140 + idx * 80}ms` }}
                   >
                     <div className="flex justify-between text-sm mb-3">
                       <span className="font-bold text-slate-700">{dept.name}</span>
@@ -963,7 +1087,10 @@ export default function MohanFinalDashboard() {
                 <Activity className="w-5 h-5 mr-2 text-red-500" />
                 Drift Diagnostics
               </h2>
-              <div className={`${GLASS_CARD} overflow-hidden flex flex-col md:flex-row`}>
+              <div
+                className={`${GLASS_CARD} overflow-hidden flex flex-col md:flex-row card-fade-in`}
+                style={{ animationDelay: '260ms' }}
+              >
                 <div className="p-6 md:w-1/3 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
                   <div className="mb-4">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -1030,6 +1157,308 @@ export default function MohanFinalDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </section>
+          </div>
+        ) : activeTab === 'Workflow Traces' ? (
+          <div className="space-y-8">
+            <section className="mt-2 card-fade-in" style={{ animationDelay: '60ms' }}>
+              <div className="flex flex-col xl:flex-row gap-6">
+                {/* 左侧：Workflow Logs，使用玻璃卡片包裹 */}
+                <aside className="w-full xl:w-80">
+                  <div className={`${GLASS_CARD} p-4 h-full flex flex-col cursor-default`}>
+                    <h2 className="font-bold text-slate-900 mb-4">Workflow Logs</h2>
+                    <div className="relative mb-3">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Search ID, type or owner..."
+                        className="w-full pl-9 pr-3 py-2 bg-white/40 border border-white/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 placeholder-gray-400"
+                        value={workflowFilterText}
+                        onChange={(e) => setWorkflowFilterText(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2 mb-3">
+                      <button className="flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-medium text-slate-600 bg-white/60 border border-white/60 rounded hover:bg-white transition-colors">
+                        <Filter className="w-3 h-3 mr-1.5" /> Filter
+                      </button>
+                      <button className="flex-1 flex items-center justify-center px-3 py-1.5 text-xs font-medium text-slate-600 bg-white/60 border border-white/60 rounded hover:bg-white transition-colors">
+                        Last 7 Days
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto -mx-4 px-4 custom-scrollbar">
+                      {TRACE_LIST.filter((t) => {
+                        const q = workflowFilterText.toLowerCase();
+                        if (!q) return true;
+                        return (
+                          t.id.toLowerCase().includes(q) ||
+                          t.title.toLowerCase().includes(q) ||
+                          t.owner.toLowerCase().includes(q)
+                        );
+                      }).map((trace) => (
+                        <div
+                          key={trace.id}
+                          onClick={() => setSelectedTraceId(trace.id)}
+                          className={`p-4 border-b border-white/40 cursor-pointer hover:bg-white/60 transition-colors ${
+                            selectedTraceId === trace.id
+                              ? 'bg-blue-50/40 border-l-4 border-l-blue-600'
+                              : 'border-l-4 border-l-transparent'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-bold text-slate-800 text-sm truncate pr-2">
+                              {trace.title}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold ${
+                                trace.status === 'Critical' ? 'text-rose-600' : 'text-gray-400'
+                              }`}
+                            >
+                              {trace.duration}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500">{trace.id}</span>
+                            <span
+                              className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border rounded-full ${
+                                trace.status === 'Critical'
+                                  ? 'bg-rose-50 text-rose-600 border-rose-100'
+                                  : trace.status === 'Warning'
+                                  ? 'bg-amber-50 text-amber-600 border-amber-100'
+                                  : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              }`}
+                            >
+                              {trace.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-xs text-gray-400">
+                            <User className="w-3 h-3 mr-1" /> {trace.owner}
+                            <span className="mx-2">•</span>
+                            <span>{trace.startTime}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+
+                {/* 右侧：Timeline + Insight */}
+                <section className="flex-1 space-y-6">
+                  {/* Header */}
+                  <header
+                    className={`${GLASS_CARD} px-6 py-5 flex justify-between items-center cursor-default card-fade-in`}
+                    style={{ animationDelay: '120ms' }}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <span>Workflow Trace</span>
+                        <ArrowRight className="w-4 h-4" />
+                        <span className="font-medium text-slate-900">{WORKFLOW_TIMELINE.id}</span>
+                      </div>
+                      <h1 className="text-xl font-bold text-slate-900">
+                        Contract Renewal: Acme Corp
+                      </h1>
+                    </div>
+                    <div className="flex gap-8">
+                      <div className="text-right">
+                        <div className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                          Total Duration
+                        </div>
+                        <div className="text-2xl font-bold text-rose-600 flex items-center justify-end">
+                          <Clock className="w-5 h-5 mr-2" />
+                          {WORKFLOW_TIMELINE.summary.totalDuration}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Avg: {WORKFLOW_TIMELINE.summary.expectedDuration} (+380% deviation)
+                        </div>
+                      </div>
+                      <div className="h-12 w-px bg-gray-200" />
+                      <div className="text-right">
+                        <div className="text-xs text-gray-400 uppercase font-semibold mb-1">
+                          Bottleneck
+                        </div>
+                        <div className="text-lg font-bold text-slate-800">
+                          {WORKFLOW_TIMELINE.summary.bottleneckStage}
+                        </div>
+                        <div className="text-xs text-rose-500 font-medium">12d 6h blocked</div>
+                      </div>
+                    </div>
+                  </header>
+
+                  {/* Timeline */}
+                  <div
+                    className={`${GLASS_CARD} p-6 card-fade-in`}
+                    style={{ animationDelay: '180ms' }}
+                  >
+                    <h3 className="text-sm font-bold text-slate-900 mb-6 uppercase tracking-wider">
+                      Execution Timeline
+                    </h3>
+                    <div className="flex gap-4 mb-4 text-xs text-slate-600">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-blue-500 rounded-sm mr-2" />
+                        Active Work
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-gray-300 rounded-sm mr-2" />
+                        Queue / Wait
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-rose-500 rounded-sm mr-2" />
+                        Blocked / Deviation
+                      </div>
+                    </div>
+                    <div className="space-y-4 relative">
+                      <div className="absolute left-[180px] top-4 bottom-4 w-px bg-gray-100 z-0" />
+                      {WORKFLOW_TIMELINE.stages.map((stage) => (
+                        <div key={stage.id} className="relative z-10 group">
+                          <div className="flex items-center">
+                            <div className="w-[180px] pr-4 text-right flex-shrink-0">
+                              <div className="text-sm font-bold text-slate-700">{stage.name}</div>
+                              <div className="text-xs text-gray-400">{stage.tool}</div>
+                            </div>
+                            <div className="flex-1 h-12 relative bg-white/40 rounded-lg border border-white/60 flex items-center px-2">
+                              <div
+                                onClick={() => setSelectedStageId(stage.id)}
+                                className={`
+                                  h-6 rounded cursor-pointer transition-all duration-200 relative
+                                  ${
+                                    stage.type === 'active'
+                                      ? 'bg-blue-500 hover:bg-blue-600'
+                                      : ''
+                                  }
+                                  ${
+                                    stage.type === 'queue'
+                                      ? 'bg-gray-300 hover:bg-gray-400'
+                                      : ''
+                                  }
+                                  ${
+                                    stage.type === 'blocked'
+                                      ? 'bg-rose-500 hover:bg-rose-600 shadow-md ring-2 ring-rose-100'
+                                      : ''
+                                  }
+                                  ${
+                                    stage.type === 'pending'
+                                      ? 'bg-white border-2 border-dashed border-gray-300'
+                                      : ''
+                                  }
+                                  ${
+                                    selectedStageId === stage.id
+                                      ? 'ring-2 ring-offset-1 ring-slate-900'
+                                      : ''
+                                  }
+                                `}
+                                style={{
+                                  width: stage.timelineWidth,
+                                  marginLeft: stage.timelineOffset,
+                                }}
+                              >
+                                {stage.type === 'blocked' && (
+                                  <div
+                                    className="absolute inset-0 opacity-20"
+                                    style={{
+                                      backgroundImage:
+                                        'linear-gradient(45deg, #000 25%, transparent 25%, transparent 50%, #000 50%, #000 75%, transparent 75%, transparent)',
+                                      backgroundSize: '8px 8px',
+                                    }}
+                                  />
+                                )}
+                                <span
+                                  className={`absolute top-[-20px] left-0 text-[10px] font-bold whitespace-nowrap ${
+                                    stage.type === 'blocked'
+                                      ? 'text-rose-600'
+                                      : 'text-slate-500'
+                                  }`}
+                                >
+                                  {stage.duration}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="w-32 pl-4 flex items-center">
+                              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 mr-2">
+                                {stage.owner.charAt(0)}
+                              </div>
+                              <span className="text-xs text-gray-500 truncate">
+                                {stage.owner}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Analysis Panel */}
+                  {activeWorkflowInsight ? (
+                    <div
+                      className={`${GLASS_CARD} border border-rose-100 overflow-hidden card-fade-in`}
+                      style={{ animationDelay: '240ms' }}
+                    >
+                      <div className="bg-rose-50/60 px-6 py-3 border-b border-rose-100 flex items-center">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 mr-2" />
+                        <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">
+                          Root Cause Analysis
+                        </span>
+                      </div>
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-1">
+                          <h3 className="text-lg font-bold text-slate-900 mb-2">
+                            {activeWorkflowInsight.title}
+                          </h3>
+                          <div className="text-sm text-slate-600 mb-4">
+                            <span className="font-semibold text-slate-900">Impact: </span>
+                            {activeWorkflowInsight.impact}
+                          </div>
+                          <div className="p-3 bg-gray-50/80 rounded-lg text-xs text-gray-500 border border-gray-100">
+                            <span className="font-bold text-gray-700 block mb-1">
+                              Detected Root Cause:
+                            </span>
+                            {activeWorkflowInsight.rootCause}
+                          </div>
+                        </div>
+                        <div className="md:col-span-2 flex flex-col justify-between">
+                          <div>
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                              VLM Observation
+                            </h4>
+                            <p className="text-sm text-slate-700 leading-relaxed mb-4">
+                              {activeWorkflowInsight.observation}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {activeWorkflowInsight.evidence.map((ev, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center px-2.5 py-1.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                >
+                                  {ev.type === 'email' ? (
+                                    <Mail className="w-3 h-3 mr-1.5" />
+                                  ) : (
+                                    <FileText className="w-3 h-3 mr-1.5" />
+                                  )}
+                                  {ev.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
+                            <div className="text-sm text-slate-600">
+                              <span className="font-bold text-slate-900">
+                                Recommendation:{' '}
+                              </span>
+                              {activeWorkflowInsight.recommendation}
+                            </div>
+                            <button className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded hover:bg-slate-800 transition-colors">
+                              View Logs
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
+                      Select a stage above to view detailed analysis
+                    </div>
+                  )}
+                </section>
               </div>
             </section>
           </div>
