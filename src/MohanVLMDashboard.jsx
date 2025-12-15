@@ -1587,29 +1587,6 @@ export default function MohanFinalDashboard() {
         ) : activeTab === 'Team Pulse' ? (
           <div className="space-y-8">
             {/* Header */}
-            <header
-              className={`mb-2 transition-all duration-700 transform ${
-                mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-              }`}
-            >
-              <div className="flex items-center text-sm text-gray-500 mb-2">
-                <span>Organization</span>
-                <ArrowRight className="w-4 h-4 mx-2" />
-                <span className="font-medium text-slate-900">Team Pulse</span>
-              </div>
-              <div className="flex justify-between items-end">
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900">Organizational Health</h1>
-                  <p className="text-gray-500 mt-1 text-sm">
-                    Real-time analysis of work patterns, capacity, and friction.
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2 text-[11px] text-gray-400 bg-white/80 px-3 py-1.5 rounded-full border border-white/70 shadow-sm">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Live System Signals • Privacy Protected (Aggregated)</span>
-                </div>
-              </div>
-            </header>
 
             {/* Vitals cards */}
             <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
