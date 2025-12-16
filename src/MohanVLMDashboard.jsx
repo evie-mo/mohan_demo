@@ -1,42 +1,74 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
+  // 布局与基础图标
   LayoutGrid,
-  Target,
+  BrainCircuit,
+  History,
+  Shield,
+  Settings,
+  Sparkles,
   Zap,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Play,
+  Pause,
+  Copy,
+  Clock,
+  MessageSquare,
+  FileText,
   ArrowUpRight,
   ArrowDownRight,
-  Search,
-  Sparkles,
-  Clock,
-  AlertTriangle,
-  Activity,
-  Layers,
-  ChevronRight,
-  MonitorPlay,
-  X,
-  BrainCircuit,
-  Eye,
-  Briefcase,
-  Settings,
-  LogOut,
-  ChevronUp,
-  User,
   ArrowRight,
+  Layers,
+  Send,
+  X,
+  Bot,
+  User,
+  Paperclip,
+  // 状态图标
+  BarChart3,
+  AlertTriangle,
   CheckCircle2,
+  FileJson,
+  PenTool,
+  // Total Recall 页面用到的图标
+  Search,
+  Video,
+  Monitor,
+  MonitorPlay,
   MonitorX,
-  FileText,
+  Command,
+  CornerUpLeft,
+  CornerDownRight,
   Filter,
+  Calendar,
+  Eye,
+  EyeOff,
+  Download,
+  MoreHorizontal,
+  Hash,
+  Link,
+  Image,
+  // 其他图标
+  Target,
+  Activity,
+  Briefcase,
+  LogOut,
   Mail,
   AlertCircle,
   Coffee,
-  MessageSquare,
   Users,
+  Battery,
+  Sun,
+  Moon,
+  ArrowUp,
 } from 'lucide-react';
 
 // --- Styles & Animation ---
 // 1. 动态呼吸背景（两团柔和的蓝色光晕）
 const BREATHING_BG =
-  'bg-slate-50 relative overflow-hidden before:absolute before:top-[-10%] before:right-[-10%] before:w-[520px] before:h-[520px] before:rounded-full before:bg-blue-400/60 before:blur-[90px] before:animate-pulse-slow after:absolute after:bottom-[-10%] after:left-[-10%] after:w-[520px] after:h-[520px] after:rounded-full after:bg-indigo-500/55 after:blur-[90px] after:animate-pulse-slower mohan-breathing-bg';
+  'bg-slate-50 relative overflow-hidden before:fixed before:top-[-10%] before:right-[-10%] before:w-[520px] before:h-[520px] before:rounded-full before:bg-blue-400/60 before:blur-[90px] before:animate-pulse-slow after:fixed after:bottom-[-10%] after:left-[-10%] after:w-[520px] after:h-[520px] after:rounded-full after:bg-indigo-500/55 after:blur-[90px] after:animate-pulse-slower mohan-breathing-bg';
 // 2. 磨砂玻璃卡片
 const GLASS_CARD =
   'backdrop-blur-xl bg-white/70 border border-white/40 shadow-sm hover:shadow-lg hover:bg-white/90 transition-all duration-300 rounded-2xl relative group cursor-pointer active:scale-[0.99]';
@@ -74,6 +106,512 @@ const CURRENT_USER = {
   role: 'CEO / Admin',
   avatarInitials: 'AC',
   org: 'Nebula AI',
+};
+
+// Employee View Data
+const MEMORY_STREAM = [
+  {
+    id: 't1',
+    time: '10:30 AM',
+    duration: '1h 15m',
+    title: 'Deep Work: Payment Gateway',
+    app: 'VS Code',
+    ai_summary: 'Refactored `auth_controller.ts`. Fixed the race condition bug reported in T-402.',
+    intent: 'High Focus',
+    color: 'bg-blue-500',
+  },
+  {
+    id: 't2',
+    time: '11:50 AM',
+    duration: '20m',
+    title: 'Design Sync',
+    app: 'Figma',
+    ai_summary: "Reviewed 'Mobile Checkout v2'. Commented on corner radius consistency.",
+    intent: 'Collaboration',
+    color: 'bg-blue-400',
+  },
+];
+
+const MEMORY_SPARKS = [
+  {
+    id: 's1',
+    type: 'Resume',
+    icon: FileText,
+    text: "Resuming 'Q3 Deck'?",
+    sub: 'You closed it yesterday at slide 14.',
+    action: 'Open',
+  },
+  {
+    id: 's2',
+    type: 'Reply',
+    icon: MessageSquare,
+    text: 'Draft reply to Sarah?',
+    sub: 'She asked about the API docs 2h ago.',
+    action: 'Draft',
+  },
+];
+
+const BLOCKED_APPS = [
+  { name: 'WeChat', icon: '💬', active: true },
+  { name: 'Spotify', icon: '🎵', active: true },
+  { name: 'Incognito Window', icon: '🕶️', active: true },
+  { name: 'Banking Apps', icon: '🏦', active: true },
+];
+
+// Chat History Mock Data
+const INITIAL_CHAT_HISTORY = [];
+
+// Manager 视角的 AI 响应
+const MANAGER_AI_RESPONSE = {
+  id: 'msg_ceo_1',
+  sender: 'ai',
+  role: 'system',
+  content: 'Analyzing **Q3 Strategic Alignment** drop...',
+  cardData: {
+    type: 'drift_alert',
+    title: 'Root Cause Detected',
+    highlight: '450 Hours Burned',
+    description:
+      "The stall is NOT a manpower issue. Analysis shows massive time loss on 'API Schema Validation' errors.",
+    stats: [
+      { label: 'Impact', value: 'High', color: 'text-red-600' },
+      { label: 'Recovery', value: '3 Days', color: 'text-blue-600' },
+    ],
+    action: 'Pause feature dev',
+  },
+};
+
+// Employee 视角的 AI 响应 - 记忆查找
+const EMPLOYEE_MEMORY_RESPONSE = {
+  id: 'msg_emp_mem',
+  sender: 'ai',
+  content: "I found the deck you worked on last Tuesday. It's titled **'Q3_Strategy_v2.pptx'**.",
+  attachments: [
+    { type: 'file', name: 'Q3_Strategy_v2.pptx', path: '~/Google Drive/Work/' },
+  ],
+};
+
+// Employee 视角的 AI 响应 - 报告生成
+const EMPLOYEE_REPORT_RESPONSE = {
+  id: 'msg_emp_report',
+  sender: 'ai',
+  content: 'Here is a draft of your **Daily Standup**:',
+  reportData: {
+    date: 'Oct 24, 2025',
+    bullets: [
+      '✅ **Deep Work:** Refactored `PaymentGateway` logic.',
+      '🤝 **Collab:** Synced with Design team.',
+      '🚧 **Blocker:** Waiting for Staging DB access.',
+    ],
+  },
+};
+
+// Total Recall 2.0: 预置更多数据以展示筛选效果
+const ALL_MEMORIES = [
+  // --- Meetings ---
+  {
+    id: 'm1',
+    category: 'Meetings',
+    type: 'meeting',
+    app: 'Zoom',
+    timestamp: 'Tue, Oct 22 • 14:30',
+    title: 'Meeting with Sarah: Budget Review',
+    context_text: "Sarah is sharing screen. Slide title: 'Q3 Financial Projections'. Visual trend: Upward.",
+    image_color: 'bg-blue-900',
+    keywords: ['Budget', 'Finance'],
+    related_to: 'Linked to Excel below',
+  },
+  {
+    id: 'm4',
+    category: 'Meetings',
+    type: 'meeting',
+    app: 'Google Meet',
+    timestamp: 'Wed, Oct 23 • 10:00',
+    title: 'All Hands: Q4 Kickoff',
+    context_text: "Alex (CEO) presenting roadmap. Key phrase: 'Focus on Enterprise'.",
+    image_color: 'bg-sky-700',
+    keywords: ['Roadmap', 'Strategy'],
+    related_to: null,
+  },
+  // --- Docs ---
+  {
+    id: 'm2',
+    category: 'Docs',
+    type: 'doc',
+    app: 'Excel',
+    timestamp: 'Tue, Oct 22 • 14:45',
+    title: 'Q3_Budget_Final_v2.xlsx',
+    context_text: "Active Cell C4: '$450,000'. You highlighted this row during the meeting.",
+    image_color: 'bg-emerald-50',
+    keywords: ['$450k', 'Cost'],
+    related_to: 'Opened during Meeting',
+  },
+  {
+    id: 'm5',
+    category: 'Docs',
+    type: 'doc',
+    app: 'Notion',
+    timestamp: 'Mon, Oct 21 • 16:20',
+    title: 'PRD: Mohan Employee View',
+    context_text: "Editing section: 'Privacy Controls'. Added requirement for local-first index.",
+    image_color: 'bg-slate-50',
+    keywords: ['PRD', 'Product'],
+    related_to: null,
+  },
+  {
+    id: 'm6',
+    category: 'Docs',
+    type: 'doc',
+    app: 'Figma',
+    timestamp: 'Thu, Oct 19 • 11:00',
+    title: 'Design System v2.0',
+    context_text: "Viewing frame 'Dark Mode Colors'. You copied the hex code #4F46E5.",
+    image_color: 'bg-purple-900',
+    keywords: ['Design', 'Hex'],
+    related_to: null,
+  },
+  // --- Chat ---
+  {
+    id: 'm3',
+    category: 'Chat',
+    type: 'chat',
+    app: 'Slack',
+    timestamp: 'Mon, Oct 21 • 09:45',
+    title: 'DM with David',
+    context_text: "David: 'Are we locking the launch date to Nov 15?' You replied: 'Yes.'",
+    image_color: 'bg-purple-50',
+    keywords: ['Launch', 'Date'],
+    related_to: null,
+  },
+  {
+    id: 'm7',
+    category: 'Chat',
+    type: 'chat',
+    app: 'Teams',
+    timestamp: 'Fri, Oct 20 • 15:30',
+    title: 'Group: Engineering Sync',
+    context_text: "Deployment bot: 'Staging build failed'. Discussion followed on API timeouts.",
+    image_color: 'bg-indigo-50',
+    keywords: ['Error', 'Deploy'],
+    related_to: null,
+  },
+];
+
+// Total Recall 2.0: 智能聚类 (用于顶部 Tab)
+const SMART_CLUSTERS = [
+  { id: 'All', label: 'All Memories', count: 7 },
+  { id: 'Meetings', label: 'Meetings', count: 2 },
+  { id: 'Docs', label: 'Documents', count: 3 },
+  { id: 'Chat', label: 'Conversations', count: 2 },
+];
+
+// My Rhythm 页面数据
+const RHYTHM_DATA = {
+  // 核心：每日能量波 (模拟 9AM - 6PM 的专注度评分 0-100)
+  energyWave: [
+    { time: '09:00', value: 40, label: 'Ramp Up' },
+    { time: '10:00', value: 85, label: 'Peak Flow' },
+    { time: '11:00', value: 90, label: 'Peak Flow' },
+    { time: '12:00', value: 60, label: 'Lunch Dip' },
+    { time: '13:00', value: 50, label: 'Recovery' },
+    { time: '14:00', value: 75, label: 'Focus' },
+    { time: '15:00', value: 80, label: 'Focus' },
+    { time: '16:00', value: 40, label: 'Meeting' },
+    { time: '17:00', value: 30, label: 'Admin' },
+  ],
+  stats: {
+    goldenHour: '10:00 AM - 12:00 PM',
+    focusScore: 82, // out of 100
+    meetingDrain: 'Low', // Low, Medium, High
+    contextSwitch: 12, // times per hour
+  },
+  insights: [
+    {
+      type: 'positive',
+      icon: Sun,
+      title: 'Morning Person',
+      desc: 'You accomplish 70% of your deep work before 1pm. Protect these hours.',
+    },
+    {
+      type: 'warning',
+      icon: Battery,
+      title: 'Post-Lunch Dip',
+      desc: 'Your focus drops by 40% at 2pm. Good time for low-energy meetings.',
+    },
+  ],
+};
+
+// My Rhythm View Component
+const MyRhythmViewContent = () => {
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // --- SVG 坐标计算逻辑 ---
+  // 使用虚拟坐标系 800x200 保证绘图精度
+  const SVG_WIDTH = 800;
+  const SVG_HEIGHT = 200;
+
+  const generatePoints = () => {
+    return RHYTHM_DATA.energyWave.map((slot, index) => {
+      // X轴：(当前索引 * 步长) + 半个步长 -> 确保对齐柱子中心
+      const step = SVG_WIDTH / RHYTHM_DATA.energyWave.length;
+      const x = index * step + step / 2;
+
+      // Y轴：数值翻转 (SVG中0在顶部，所以用 总高度 - 数值高度)
+      const y = SVG_HEIGHT - (slot.value / 100) * SVG_HEIGHT;
+
+      return `${x},${y}`;
+    }).join(' ');
+  };
+
+  return (
+    <div className="w-full animate-fade-in pb-32">
+      {/* --- HEADER --- */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2 flex items-center">
+          My Rhythm
+          <span className="ml-3 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider border border-blue-200">
+            Cognitive Load
+          </span>
+        </h1>
+        <p className="text-slate-500 text-sm">
+          Understand your energy patterns to work smarter, not longer.
+        </p>
+      </div>
+
+      {/* --- HERO: HYBRID CHART (柱状 + 折线 + 面积) --- */}
+      <div className="mb-8 bg-white rounded-3xl border border-slate-200 shadow-lg shadow-blue-100/50 overflow-hidden relative group">
+        {/* Layer 0: Background Grid (背景网格) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="h-full w-full grid grid-cols-9 gap-0 px-4">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="border-r border-slate-50/80 h-full last:border-r-0" />
+            ))}
+          </div>
+          <div className="absolute inset-0 flex flex-col justify-between py-12 px-0">
+            <div className="border-b border-slate-50 w-full" />
+            <div className="border-b border-slate-50 w-full" />
+            <div className="border-b border-slate-50 w-full" />
+          </div>
+        </div>
+
+        <div className="relative z-10 p-8 pb-4">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <div className="flex items-center space-x-2 text-blue-600 mb-1">
+                <Activity className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Daily Energy Curve</span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800">
+                Your Golden Hours are <span className="text-blue-600">{RHYTHM_DATA.stats.goldenHour}</span>
+              </h2>
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-slate-900">{RHYTHM_DATA.stats.focusScore}</div>
+              <div className="text-xs text-slate-400 uppercase font-bold mt-1">Focus Score</div>
+            </div>
+          </div>
+
+          {/* Visualization Container */}
+          <div className="relative h-56 w-full">
+            {/* Layer 2: SVG Curve & Area (最上层，但不可点击) */}
+            {/* z-20 确保线条压在柱子上，pointer-events-none 确保鼠标能穿透去 Hover 柱子 */}
+            <svg
+              className="absolute inset-0 w-full h-full z-20 pointer-events-none px-4"
+              preserveAspectRatio="none"
+              viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
+            >
+              <defs>
+                <linearGradient id="gradientArea" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                </linearGradient>
+                {/* 定义阴影滤镜让线条更清晰 */}
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.1" />
+                </filter>
+              </defs>
+
+              {/* 面积填充 */}
+              <polygon
+                points={`0,${SVG_HEIGHT} ${generatePoints()} ${SVG_WIDTH},${SVG_HEIGHT}`}
+                fill="url(#gradientArea)"
+                className={`transition-opacity duration-1000 delay-300 ${animate ? 'opacity-100' : 'opacity-0'}`}
+              />
+
+              {/* 折线本身 */}
+              <polyline
+                points={generatePoints()}
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#shadow)"
+                className="transition-all duration-[1.5s] ease-out"
+                style={{
+                  strokeDasharray: '2000',
+                  strokeDashoffset: animate ? '0' : '2000',
+                }}
+              />
+
+              {/* 关键点 (Dots) */}
+              {animate &&
+                RHYTHM_DATA.energyWave.map((slot, index) => {
+                  const step = SVG_WIDTH / RHYTHM_DATA.energyWave.length;
+                  const x = index * step + step / 2;
+                  const y = SVG_HEIGHT - (slot.value / 100) * SVG_HEIGHT;
+                  return (
+                    <circle
+                      key={index}
+                      cx={x}
+                      cy={y}
+                      r="4"
+                      fill="white"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                      className="animate-fade-in"
+                    />
+                  );
+                })}
+            </svg>
+
+            {/* Layer 1: Interactive Bars (交互层) */}
+            <div className="absolute inset-0 z-10 flex items-end justify-between w-full h-full px-4">
+              {RHYTHM_DATA.energyWave.map((slot, index) => (
+                <div
+                  key={index}
+                  className="flex-1 flex flex-col items-center justify-end h-full group/bar relative"
+                >
+                  {/* Hit Area (扩大 Hover 区域) */}
+                  <div className="absolute inset-x-1 top-0 bottom-0 cursor-pointer z-30 hover:bg-blue-50/30 rounded-lg transition-colors" />
+
+                  {/* The Bar Visual (视觉柱子) */}
+                  <div
+                    className={`w-8 md:w-12 rounded-t-lg transition-all duration-700 ease-out relative pointer-events-none opacity-60 group-hover/bar:opacity-90 ${
+                      slot.value > 80
+                        ? 'bg-gradient-to-t from-blue-100 to-blue-300'
+                        : 'bg-gradient-to-t from-slate-100 to-slate-200'
+                    }`}
+                    style={{
+                      height: animate ? `${slot.value}%` : '0%',
+                      transitionDelay: `${index * 50}ms`,
+                    }}
+                  />
+
+                  {/* Tooltip (Hover) */}
+                  <div className="absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1.5 px-3 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-all shadow-xl z-50 whitespace-nowrap pointer-events-none translate-y-2 group-hover/bar:translate-y-0">
+                    <div className="font-bold text-blue-200">{slot.value}% Focus</div>
+                    <div className="text-slate-300 font-normal">{slot.label}</div>
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900" />
+                  </div>
+
+                  {/* Time Label */}
+                  <span className="absolute -bottom-6 text-[10px] font-bold text-slate-400 group-hover/bar:text-blue-600 transition-colors">
+                    {slot.time}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-6" />
+        </div>
+      </div>
+
+      {/* --- METRICS GRID --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Metric 1 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors group">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+              <BrainCircuit className="w-5 h-5" />
+            </div>
+            <span className="flex items-center text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+              <ArrowUp className="w-3 h-3 mr-1" /> Top 10%
+            </span>
+          </div>
+          <div className="text-sm text-slate-500 font-medium mb-1">Deep Work Ratio</div>
+          <div className="text-2xl font-bold text-slate-900">3.5 Hours</div>
+          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
+            <div
+              className={`bg-blue-500 h-full rounded-full transition-all duration-1000 ease-out ${
+                animate ? 'w-[70%]' : 'w-0'
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors group">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+              <Layers className="w-5 h-5" />
+            </div>
+            <span className="flex items-center text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full border border-slate-200">
+              Normal
+            </span>
+          </div>
+          <div className="text-sm text-slate-500 font-medium mb-1">Context Switches</div>
+          <div className="text-2xl font-bold text-slate-900">
+            12 <span className="text-sm text-slate-400 font-normal">/ hr</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            Mostly between <span className="font-bold text-slate-600">Slack</span> and{' '}
+            <span className="font-bold text-slate-600">VS Code</span>.
+          </p>
+        </div>
+
+        {/* Metric 3 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors group">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+              <Coffee className="w-5 h-5" />
+            </div>
+            <span className="flex items-center text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+              Healthy
+            </span>
+          </div>
+          <div className="text-sm text-slate-500 font-medium mb-1">Meeting Load</div>
+          <div className="text-2xl font-bold text-slate-900">
+            15% <span className="text-sm text-slate-400 font-normal">of day</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            You have <span className="font-bold text-slate-600">4.5h</span> of free maker time today.
+          </p>
+        </div>
+      </div>
+
+      {/* --- INSIGHTS CARDS (Bottom) --- */}
+      <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center">
+        <Zap className="w-4 h-4 mr-2 text-yellow-500" /> AI Suggestions
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {RHYTHM_DATA.insights.map((insight, i) => {
+          const IconComponent = insight.icon;
+          return (
+            <div key={i} className="flex p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div
+                className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center mr-4 ${
+                  insight.type === 'positive' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <IconComponent className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm mb-1">{insight.title}</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">{insight.desc}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 // Strategy Trace mock data
@@ -403,12 +941,22 @@ const VLM_RISKS = [
 ];
 
 export default function MohanFinalDashboard() {
+  const [userRole, setUserRole] = useState('Manager'); // 'Manager' or 'Employee'
   const [activeTab, setActiveTab] = useState('System Status');
+  const [employeeActiveTab, setEmployeeActiveTab] = useState('Focus HUD'); // Employee view tabs
+  const [isRecording, setIsRecording] = useState(true); // Employee view recording state
+  const [sessionMinutes, setSessionMinutes] = useState(52); // 累计的分钟数
+  const [searchQuery, setSearchQuery] = useState('Q3 Plan'); // Total Recall search query
+  const [activeFilter, setActiveFilter] = useState('All'); // Total Recall filter
+  const [recallTab, setRecallTab] = useState('All'); // Total Recall smart cluster tab
   const [aiFocus, setAiFocus] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [showAiDrawer, setShowAiDrawer] = useState(false); // 控制抽屉开关
   const [isAiThinking, setIsAiThinking] = useState(false); // 模拟 AI 思考状态
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false); // 控制悬浮助手窗口
+  const [chatHistory, setChatHistory] = useState([]); // 聊天历史
+  const [isTyping, setIsTyping] = useState(false); // AI 正在输入
   const [showDriftAnalysis, setShowDriftAnalysis] = useState(false); // GAP 漂移分析
   const [metricDisplayValues, setMetricDisplayValues] = useState(
     () => METRICS_DATA.map(() => ''), // 初始为空，避免先闪现最终值
@@ -421,6 +969,7 @@ export default function MohanFinalDashboard() {
   const [selectedDept, setSelectedDept] = useState('Engineering'); // Team Pulse 选中的部门
 
   const inputRef = useRef(null);
+  const chatEndRef = useRef(null);
   const activeDriftDetail = DRIFT_DETAILS[selectedDrift];
   const activeWorkflowInsight =
     selectedStageId &&
@@ -439,6 +988,17 @@ export default function MohanFinalDashboard() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 员工视角：真实时间累计（每60秒增加1分钟）
+  useEffect(() => {
+    if (userRole === 'Employee' && isRecording) {
+      const interval = setInterval(() => {
+        setSessionMinutes((prev) => prev + 1);
+      }, 60000); // 每60秒（1分钟）增加1
+
+      return () => clearInterval(interval);
+    }
+  }, [userRole, isRecording]);
 
   // 顶部三张数字卡片：仅在页面初次加载时滚动动画一次
   useEffect(() => {
@@ -505,6 +1065,45 @@ export default function MohanFinalDashboard() {
       }, 1500); // 1.5秒模拟延迟
     }
   };
+
+  // 新的聊天消息处理函数（用于悬浮助手）
+  const handleSendMessage = (text, scenario = null) => {
+    if (!text.trim()) return;
+
+    // 1. 添加用户消息
+    const newMsg = {
+      id: Date.now(),
+      sender: 'user',
+      content: text,
+    };
+    setChatHistory((prev) => [...prev, newMsg]);
+    setInputValue('');
+
+    // 2. 如果窗口没打开，打开窗口
+    if (!isAssistantOpen) setIsAssistantOpen(true);
+
+    // 3. 模拟 AI 思考和回复
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      let response;
+      if (userRole === 'Manager') {
+        response = { ...MANAGER_AI_RESPONSE, id: Date.now() + 1 };
+      } else {
+        if (scenario === 'report') {
+          response = { ...EMPLOYEE_REPORT_RESPONSE, id: Date.now() + 1 };
+        } else {
+          response = { ...EMPLOYEE_MEMORY_RESPONSE, id: Date.now() + 1 };
+        }
+      }
+      setChatHistory((prev) => [...prev, response]);
+    }, 1000);
+  };
+
+  // 自动滚动到底部
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory, isAssistantOpen]);
 
   // --- Components ---
 
@@ -644,29 +1243,62 @@ export default function MohanFinalDashboard() {
   };
 
   // 侧边导航单项
-  const NavItem = ({ label, icon: Icon, isActive, onClick }) => (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group relative overflow-hidden ${
-        isActive
-          ? 'bg-blue-50/80 text-blue-700 shadow-sm border border-blue-100'
-          : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
-      }`}
-    >
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-r-full" />
-      )}
-      <Icon
-        size={18}
-        className={isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}
-      />
-      <span>{label}</span>
-    </button>
-  );
+  const NavItem = ({ label, icon: Icon, isActive, onClick }) => {
+    const isEmployee = userRole === 'Employee';
+    return (
+      <button
+        onClick={onClick}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden ${
+          isActive
+            ? isEmployee
+              ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-50'
+              : 'bg-blue-50/80 text-blue-700 shadow-sm border border-blue-100'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+        }`}
+      >
+        {isActive && (
+          <div
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full ${
+              isEmployee ? 'bg-blue-600' : 'bg-blue-600'
+            }`}
+          />
+        )}
+        <Icon
+          size={18}
+          className={isActive ? (isEmployee ? 'text-blue-600' : 'text-blue-600') : 'text-slate-400 group-hover:text-slate-600'}
+        />
+        <span>{label}</span>
+      </button>
+    );
+  };
+
+  // Total Recall 辅助组件
+  const FilterPill = ({ label, icon: Icon, active, onClick }) => {
+    return (
+      <button
+        onClick={onClick}
+        className={`flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
+          active
+            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
+            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+        }`}
+      >
+        {Icon && <Icon className={`w-3 h-3 mr-1.5 ${active ? 'text-blue-200' : 'text-slate-400'}`} />}
+        {label}
+      </button>
+    );
+  };
+
+  const AppIcon = ({ app }) => {
+    if (app === 'Zoom') return <Video className="w-3 h-3 text-blue-500" />;
+    if (app === 'Slack') return <MessageSquare className="w-3 h-3 text-purple-500" />;
+    if (app === 'Notion') return <FileText className="w-3 h-3 text-slate-800" />;
+    return <Monitor className="w-3 h-3 text-gray-500" />;
+  };
 
   // 底部用户信息区域
   const UserProfile = () => (
-    <div className="mt-auto px-2 relative">
+    <div className="mt-auto px-3 py-2 relative z-20">
       <div
         className={`absolute bottom-full left-0 w-full mb-2 bg-white/90 backdrop-blur-xl border border-white/50 rounded-xl shadow-xl p-2 transition-all duration-200 origin-bottom ${
           showProfileMenu ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'
@@ -685,22 +1317,37 @@ export default function MohanFinalDashboard() {
       </div>
 
       <button
-        onClick={() => setShowProfileMenu((v) => !v)}
-        className="w-full flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-white/50 hover:border-white/40 hover:shadow-sm transition-all group"
+        type="button"
+        onClick={(e) => {
+          console.log('Avatar clicked, current role:', userRole);
+          e.preventDefault();
+          e.stopPropagation();
+          const newRole = userRole === 'Manager' ? 'Employee' : 'Manager';
+          console.log('Switching to role:', newRole);
+          setUserRole(newRole);
+          setShowProfileMenu(false);
+          // 重置状态，给新角色一个干净的界面
+          setIsAssistantOpen(false);
+          setChatHistory([]);
+          setInputValue('');
+        }}
+        className="w-full flex items-center gap-3 p-4 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-100 transition-all group cursor-pointer relative z-30 min-h-[64px]"
       >
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-600 flex items-center justify-center text-white text-xs font-bold shadow-md">
-          {CURRENT_USER.avatarInitials}
+        <div
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md ring-2 ring-white ${
+            userRole === 'Manager'
+              ? 'bg-gradient-to-tr from-slate-700 to-slate-600'
+              : 'bg-gradient-to-tr from-blue-500 to-blue-400 group-hover:shadow-blue-200'
+          }`}
+        >
+          {userRole === 'Manager' ? CURRENT_USER.avatarInitials : 'AC'}
         </div>
         <div className="flex-1 text-left">
-          <div className="text-xs font-bold text-slate-800">{CURRENT_USER.name}</div>
-          <div className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-0.5 border border-blue-100">
-            {CURRENT_USER.role}
+          <div className="text-sm font-bold text-slate-800">{CURRENT_USER.name}</div>
+          <div className="text-[10px] font-medium text-slate-500 group-hover:text-blue-600 flex items-center uppercase tracking-wide">
+            {userRole === 'Manager' ? CURRENT_USER.role : 'My Edge'} <ChevronRight className="w-3 h-3 ml-1" />
           </div>
         </div>
-        <ChevronUp
-          size={14}
-          className={`text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
-        />
       </button>
     </div>
   );
@@ -802,68 +1449,197 @@ export default function MohanFinalDashboard() {
         data={AI_ANALYSIS_RESULT}
       />
 
-      {/* --- Enhanced AI Omnibar --- */}
+      {/* --- Floating Assistant Window (悬浮助手) --- */}
+      {/* 位置在底部输入框上方，模拟 Popover 效果 */}
       <div
-        className={`fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[600px] z-[80] transition-all duration-500 ease-out-expo ${
-          aiFocus ? 'scale-105 -translate-y-6' : ''
+        className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 w-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 z-40 flex flex-col transition-all duration-300 origin-bottom ${
+          isAssistantOpen
+            ? 'opacity-100 scale-100 translate-y-0'
+            : 'opacity-0 scale-95 translate-y-8 pointer-events-none'
         }`}
+        style={{ maxHeight: '60vh' }}
       >
-        {/* Edge Blur / Outer Glow Effect */}
-        <div
-          className={`absolute -inset-4 bg-white/40 blur-2xl rounded-[30px] transition-opacity duration-500 ${
-            aiFocus ? 'opacity-100' : 'opacity-0'
-          }`}
-        ></div>
+        {/* Window Header */}
+        <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 backdrop-blur rounded-t-2xl">
+          <div className="flex items-center space-x-2">
+            <Sparkles className={`w-4 h-4 ${userRole === 'Manager' ? 'text-blue-600' : 'text-blue-600'}`} />
+            <span className="font-bold text-sm text-slate-800">Mohan AI</span>
+          </div>
+          <button
+            onClick={() => setIsAssistantOpen(false)}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        <div
-          className={`
-          relative backdrop-blur-2xl bg-white/90 rounded-2xl shadow-2xl 
-          // 基础边框
-          border border-white/50 
-          // 流光效果实现：使用 background-image 模拟边框，并在 focus 时应用动画
-          ${aiFocus ? 'p-[2px] animate-border-flow bg-gradient-to-r from-blue-500 via-indigo-400 to-blue-600' : 'p-1.5'}
-          flex items-center gap-3 overflow-hidden group transition-all duration-300
-        `}
-        >
-          {/* Inner Container (to hide the gradient padding) */}
-          <div className="flex-1 flex items-center gap-3 bg-white/90 backdrop-blur-xl rounded-xl p-1.5 h-full w-full relative z-10">
-            {/* Sparkles Icon (Animated) */}
+        {/* Chat Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50/30 custom-scrollbar">
+          {chatHistory.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {msg.sender === 'ai' && (
+                <div
+                  className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mr-3 mt-1 text-white shadow-sm bg-gradient-to-br ${
+                    userRole === 'Manager' ? 'from-blue-500 to-blue-600' : 'from-blue-500 to-blue-600'
+                  }`}
+                >
+                  <Bot className="w-4 h-4" />
+                </div>
+              )}
+
+              <div className="max-w-[85%]">
+                {/* Standard Text Bubble */}
+                {msg.content && (
+                  <div
+                    className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
+                      msg.sender === 'user'
+                        ? 'bg-slate-800 text-white rounded-tr-none'
+                        : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                )}
+
+                {/* Manager Special: Data Card */}
+                {msg.cardData && (
+                  <div className="mt-3 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden card-fade-in">
+                    <div className="bg-red-50/50 px-4 py-2 border-b border-red-100 flex items-center">
+                      <AlertTriangle className="w-4 h-4 text-red-500 mr-2" />
+                      <span className="text-xs font-bold text-red-700 uppercase">{msg.cardData.title}</span>
+                    </div>
+                    <div className="p-4">
+                      <div className="text-xl font-bold text-slate-900 mb-1">{msg.cardData.highlight}</div>
+                      <p className="text-xs text-slate-500 mb-4">{msg.cardData.description}</p>
+                      <div className="flex gap-2 mb-4">
+                        {msg.cardData.stats.map((stat, i) => (
+                          <div
+                            key={i}
+                            className="px-2 py-1 bg-slate-50 rounded text-[10px] font-bold text-slate-500 border border-slate-100"
+                          >
+                            {stat.label}: <span className={stat.color}>{stat.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Employee Special: Report */}
+                {msg.reportData && (
+                  <div className="mt-3 bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden group card-fade-in">
+                    <div className="bg-blue-50/50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
+                      <div className="flex items-center text-blue-700 font-bold text-xs uppercase">
+                        <FileJson className="w-3 h-3 mr-2" /> Daily Standup
+                      </div>
+                      <Copy className="w-3 h-3 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors" />
+                    </div>
+                    <div className="p-4 space-y-2 text-sm text-slate-700">
+                      {msg.reportData.bullets.map((bullet, i) => (
+                        <div key={i} className="pl-2 border-l-2 border-blue-100">
+                          {bullet.replace(/\*\*/g, '')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Employee Special: Attachment */}
+                {msg.attachments && (
+                  <div className="mt-2 space-y-2">
+                    {msg.attachments.map((file, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors group"
+                      >
+                        <FileText className="w-4 h-4 text-blue-500 mr-2" />
+                        <div className="flex-1 text-xs font-bold text-slate-700 truncate">{file.name}</div>
+                        <ArrowUpRight className="w-3 h-3 text-slate-400" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="text-xs text-slate-400 ml-11 animate-pulse">AI thinking...</div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+      </div>
+
+      {/* --- Bottom Input Bar (触发器) --- */}
+      <div className="fixed bottom-8 left-0 right-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+        <div className="pointer-events-auto flex flex-col items-center">
+          {/* 快捷问题气泡 (Suggestion Pills) */}
+          {!isAssistantOpen && !inputValue && (
+            <div className="flex items-center space-x-3 mb-4">
+              {userRole === 'Manager' ? (
+                <button
+                  onClick={() => handleSendMessage('Why is our Q3 Strategic Alignment dropping?')}
+                  className="px-4 py-2 bg-white/90 backdrop-blur border border-blue-200 text-blue-700 text-sm font-medium rounded-full shadow-lg hover:bg-blue-50 transition-all flex items-center"
+                >
+                  <Sparkles className="w-3 h-3 mr-2" />
+                  Why is Q3 Alignment dropping?
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleSendMessage('Draft my daily standup', 'report')}
+                    className="px-4 py-2 bg-white/90 backdrop-blur border border-blue-200 text-blue-700 text-sm font-medium rounded-full shadow-lg hover:bg-blue-50 transition-all flex items-center"
+                  >
+                    <PenTool className="w-3 h-3 mr-2" /> Draft Standup
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage('Find Q3 deck', 'memory')}
+                    className="px-4 py-2 bg-white/90 backdrop-blur border border-blue-200 text-blue-700 text-sm font-medium rounded-full shadow-lg hover:bg-blue-50 transition-all flex items-center"
+                  >
+                    <History className="w-3 h-3 mr-2" /> Find Q3 Deck
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* The Input Capsule */}
+          <div className="w-[600px] relative transition-all duration-300 shadow-2xl opacity-100 translate-y-0">
             <div
-              className={`relative p-3 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 shrink-0 transition-transform ${
-                aiFocus ? 'scale-110' : ''
+              className={`relative bg-white rounded-2xl border flex items-center p-2 ${
+                userRole === 'Manager' ? 'border-blue-200' : 'border-blue-200'
               }`}
             >
-              <Sparkles size={20} className={aiFocus || isAiThinking ? 'animate-spin-slow' : ''} />
-            </div>
-
-            <div className="flex-1 relative">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 ${
+                  userRole === 'Manager' ? 'bg-blue-50 text-blue-600' : 'bg-blue-50 text-blue-600'
+                }`}
+              >
+                <Bot className="w-5 h-5" />
+              </div>
               <input
                 ref={inputRef}
                 type="text"
-                // 设置默认问题
-                placeholder={DEFAULT_QUESTION}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleAiSubmit}
-                // 点击 placeholder 自动填充
-                onClick={() => !inputValue && setInputValue(DEFAULT_QUESTION)}
-                className="w-full bg-transparent border-none outline-none text-base text-slate-800 placeholder-slate-400 font-medium h-10"
-                onFocus={() => setAiFocus(true)}
-                onBlur={() => setAiFocus(false)}
-                disabled={isAiThinking}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(inputValue);
+                  }
+                }}
+                placeholder={
+                  userRole === 'Manager' ? 'Ask about strategy...' : 'Ask your memory...'
+                }
+                className="flex-1 bg-transparent border-none text-base text-slate-700 placeholder-slate-400 focus:ring-0 h-10 outline-none"
               />
-            </div>
-
-            <div className="relative pr-3 hidden md:flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0 transition-all">
-              {isAiThinking ? (
-                <span className="text-blue-600 flex items-center gap-1 animate-pulse">
-                  <BrainCircuit size={14} /> Thinking...
-                </span>
-              ) : aiFocus ? (
-                <span className="text-blue-600 flex items-center gap-1 transition-opacity">
-                  Press ↵
-                </span>
-              ) : null}
+              <button
+                onClick={() => handleSendMessage(inputValue)}
+                className={`p-2 rounded-lg text-white shadow-sm transition-transform active:scale-95 ${
+                  userRole === 'Manager' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -871,62 +1647,461 @@ export default function MohanFinalDashboard() {
 
       {/* Sidebar + Main 布局（整体包一层 z-10，保证在背景渐变之上） */}
       <div className="relative z-10 flex min-h-screen w-full">
-        <aside className="w-64 flex flex-col py-6 px-3 border-r border-white/20 bg-white/30 backdrop-blur-md h-full sticky top-0 z-20">
+        <aside className="w-64 flex flex-col py-6 px-3 border-r border-white/20 bg-white/30 backdrop-blur-md h-screen fixed top-0 left-0 z-20">
           <div className="px-4 mb-8 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
+            <div
+              className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shadow-lg ${
+                userRole === 'Manager'
+                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-500/30'
+                  : 'bg-gradient-to-br from-blue-600 to-blue-400 shadow-blue-500/30'
+              }`}
+            >
               M
             </div>
             <span className="text-lg font-bold text-slate-900 tracking-tight">Mohan</span>
           </div>
 
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-1 overflow-y-auto">
             <div className="px-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Platform
+              {userRole === 'Manager' ? 'Platform' : 'Personal Intelligence'}
             </div>
-            <NavItem
-              label="System Status"
-              icon={LayoutGrid}
-              isActive={activeTab === 'System Status'}
-              onClick={() => setActiveTab('System Status')}
-            />
-            <NavItem
-              label="Strategy Trace"
-              icon={Target}
-              isActive={activeTab === 'Strategy Trace'}
-              onClick={() => setActiveTab('Strategy Trace')}
-            />
-            <NavItem
-              label="Workflow Traces"
-              icon={Layers}
-              isActive={activeTab === 'Workflow Traces'}
-              onClick={() => setActiveTab('Workflow Traces')}
-            />
+            {userRole === 'Manager' ? (
+              <>
+                <NavItem
+                  label="System Status"
+                  icon={LayoutGrid}
+                  isActive={activeTab === 'System Status'}
+                  onClick={() => setActiveTab('System Status')}
+                />
+                <NavItem
+                  label="Strategy Trace"
+                  icon={Target}
+                  isActive={activeTab === 'Strategy Trace'}
+                  onClick={() => setActiveTab('Strategy Trace')}
+                />
+                <NavItem
+                  label="Workflow Traces"
+                  icon={Layers}
+                  isActive={activeTab === 'Workflow Traces'}
+                  onClick={() => setActiveTab('Workflow Traces')}
+                />
 
-            <div className="px-4 mb-2 mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Organization
-            </div>
-            <NavItem
-              label="Team Pulse"
-              icon={Activity}
-              isActive={activeTab === 'Team Pulse'}
-              onClick={() => setActiveTab('Team Pulse')}
-            />
-            <NavItem
-              label="Settings"
-              icon={Settings}
-              isActive={activeTab === 'Settings'}
-              onClick={() => setActiveTab('Settings')}
-            />
+                <div className="px-4 mb-2 mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Organization
+                </div>
+                <NavItem
+                  label="Team Pulse"
+                  icon={Activity}
+                  isActive={activeTab === 'Team Pulse'}
+                  onClick={() => setActiveTab('Team Pulse')}
+                />
+                <NavItem
+                  label="Settings"
+                  icon={Settings}
+                  isActive={activeTab === 'Settings'}
+                  onClick={() => setActiveTab('Settings')}
+                />
+              </>
+            ) : (
+              <>
+                <NavItem
+                  label="Focus HUD"
+                  icon={LayoutGrid}
+                  isActive={employeeActiveTab === 'Focus HUD'}
+                  onClick={() => setEmployeeActiveTab('Focus HUD')}
+                />
+                <NavItem
+                  label="Total Recall"
+                  icon={History}
+                  isActive={employeeActiveTab === 'Total Recall'}
+                  onClick={() => setEmployeeActiveTab('Total Recall')}
+                />
+                <NavItem
+                  label="My Rhythm"
+                  icon={BrainCircuit}
+                  isActive={employeeActiveTab === 'My Rhythm'}
+                  onClick={() => setEmployeeActiveTab('My Rhythm')}
+                />
+                <div className="my-4 border-t border-white/20" />
+                <NavItem
+                  label="Privacy & Rules"
+                  icon={Shield}
+                  isActive={employeeActiveTab === 'Privacy Controls'}
+                  onClick={() => setEmployeeActiveTab('Privacy Controls')}
+                />
+                <NavItem
+                  label="Settings"
+                  icon={Settings}
+                  isActive={employeeActiveTab === 'Settings'}
+                  onClick={() => setEmployeeActiveTab('Settings')}
+                />
+              </>
+            )}
           </nav>
 
           <UserProfile />
         </aside>
 
         <main
-          className={`flex-1 min-h-screen overflow-y-auto p-8 lg:p-10 pb-64 custom-scrollbar transition-all duration-500 ${
+          className={`flex-1 min-h-screen overflow-y-auto p-8 lg:p-10 pb-64 custom-scrollbar transition-all duration-500 ml-64 ${
             showAiDrawer ? 'pr-[500px]' : ''
           }`}
         >
+        {userRole === 'Employee' ? (
+          // Employee View Content
+          <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+            {/* Top Bar: The "Ask" Interface */}
+            <header className="h-20 flex items-center justify-between px-8 flex-shrink-0 z-20">
+              {/* Omni-Search (AI Input) */}
+              <div className="relative w-[480px] group">
+                <div className="absolute inset-0 bg-blue-500/5 rounded-2xl blur-md group-hover:bg-blue-500/10 transition-all duration-500" />
+                <div className="relative bg-white rounded-2xl border border-blue-100 shadow-sm flex items-center p-1.5 transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center mr-2">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ask your second brain..."
+                    className="w-full bg-transparent border-none text-sm text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+                  />
+                  <div className="flex items-center space-x-1 pr-2">
+                    <kbd className="hidden sm:inline-flex items-center h-5 px-1.5 border border-slate-200 rounded text-[10px] font-sans font-medium text-slate-400">
+                      ⌘K
+                    </kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Indicators */}
+              <div className="flex items-center space-x-6">
+                <div className="text-right hidden md:block">
+                  <div className="text-xs font-bold text-slate-900">Tuesday, Oct 24</div>
+                  <div className="text-[10px] text-slate-500">Local Processing • Online</div>
+                </div>
+              </div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+
+              {employeeActiveTab === 'Focus HUD' ? (
+                <>
+                  {/* Hero: Neural Core */}
+                  <section className="relative w-full rounded-3xl overflow-hidden mb-8 shadow-2xl shadow-blue-200/50 group card-fade-in">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-blue-500 to-blue-300" />
+                    <div className="absolute top-[-50%] left-[-20%] w-[80%] h-[200%] bg-gradient-to-b from-transparent via-white/10 to-transparent rotate-45 transform translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-[3s] ease-in-out" />
+                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl animate-pulse" />
+
+                    <div className="relative z-10 p-8 md:p-10 flex flex-col md:flex-row justify-between items-center text-white">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <div className="px-2.5 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center text-xs font-bold text-blue-100">
+                            <Zap className="w-3 h-3 mr-1.5 text-yellow-300" />
+                            System Running
+                          </div>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">Your workspace is active.</h1>
+                        <p className="text-blue-100 text-lg opacity-90 max-w-lg">
+                          Context tracking is running. {sessionMinutes} minutes of session time recorded.
+                        </p>
+
+                        <div className="mt-8 flex space-x-4">
+                          <button
+                            onClick={() => setIsRecording(!isRecording)}
+                            className="px-6 py-3 rounded-xl bg-white text-blue-700 font-bold text-sm shadow-lg hover:bg-blue-50 transition-all flex items-center"
+                          >
+                            {isRecording ? (
+                              <>
+                                <Pause className="w-4 h-4 mr-2 fill-current" /> Pause Context
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4 mr-2 fill-current" /> Resume
+                              </>
+                            )}
+                          </button>
+                          <button className="px-6 py-3 rounded-xl bg-blue-800/40 border border-white/10 text-white font-medium text-sm backdrop-blur-md hover:bg-blue-800/60 transition-all">
+                            Generate Daily Summary
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="hidden md:flex relative w-48 h-48 items-center justify-center">
+                        <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
+                        <div className="absolute inset-4 border-2 border-white/20 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-400 to-purple-400 opacity-20 blur-xl animate-pulse" />
+                        <div className="relative z-10 text-center">
+                          <div className="text-5xl font-bold text-white tracking-tighter">{sessionMinutes}</div>
+                          <div className="text-xs font-medium text-blue-200 uppercase tracking-widest mt-1">Minutes</div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Memory Sparks */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center">
+                          <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
+                          Memory Sparks
+                        </h3>
+                        <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-100">
+                          AI Suggested
+                        </span>
+                      </div>
+
+                      {MEMORY_SPARKS.map((spark) => (
+                        <div
+                          key={spark.id}
+                          className="group bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-100 transition-all cursor-pointer relative overflow-hidden card-fade-in"
+                        >
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-50 to-purple-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
+                          <div className="flex items-start space-x-4 relative z-10">
+                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                              <spark.icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-slate-800 text-sm mb-0.5">{spark.text}</h4>
+                              <p className="text-xs text-slate-500 leading-tight mb-3">{spark.sub}</p>
+                              <button className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg flex items-center w-max hover:bg-blue-100 transition-colors">
+                                {spark.action} <ArrowUpRight className="w-3 h-3 ml-1" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-5 border border-blue-100/50 card-fade-in">
+                        <div className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-2">Focus Quality</div>
+                        <div className="flex items-end space-x-2">
+                          <span className="text-3xl font-bold text-slate-900">92%</span>
+                          <span className="text-xs text-slate-500 mb-1">Top 5% this week</span>
+                        </div>
+                        <div className="w-full bg-white h-1.5 rounded-full mt-3 overflow-hidden">
+                          <div className="bg-gradient-to-r from-blue-500 to-blue-400 w-[92%] h-full rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Memory Stream */}
+                    <div className="lg:col-span-2">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center">
+                          <Layers className="w-4 h-4 mr-2 text-blue-500" />
+                          Context Stream
+                        </h3>
+                        <div className="flex space-x-2">
+                          <button className="text-xs font-medium px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 shadow-sm hover:text-blue-600">
+                            Today
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 relative">
+                        <div className="absolute left-[27px] top-6 bottom-6 w-0.5 bg-slate-100 z-0" />
+
+                        {MEMORY_STREAM.map((item, idx) => (
+                          <div key={item.id} className="relative z-10 pl-2 card-fade-in" style={{ animationDelay: `${100 + idx * 80}ms` }}>
+                            <div className="group flex items-start">
+                              <div className="flex flex-col items-center mr-4 pt-1">
+                                <div className={`w-3 h-3 rounded-full ${item.color} ring-4 ring-white shadow-sm mb-1`} />
+                                <div className="text-[10px] font-bold text-slate-400">{item.time}</div>
+                              </div>
+
+                              <div className="flex-1 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md hover:border-blue-100 transition-all">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="px-2 py-0.5 rounded-md bg-slate-50 text-[10px] font-bold text-slate-600 uppercase tracking-wide border border-slate-100">
+                                      {item.app}
+                                    </span>
+                                    <h4 className="font-bold text-slate-900 text-sm">{item.title}</h4>
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-400">{item.duration}</span>
+                                </div>
+
+                                <p className="text-sm text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 group-hover:bg-blue-50/30 group-hover:text-slate-700 transition-colors">
+                                  {item.ai_summary}
+                                </p>
+
+                                <div className="mt-3 flex items-center justify-between">
+                                  <div className="flex items-center space-x-2 text-xs text-slate-400">
+                                    <Clock className="w-3 h-3" />
+                                    <span>Auto-logged</span>
+                                  </div>
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-indigo-600">
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : employeeActiveTab === 'Total Recall' ? (
+                <div className="w-full animate-fade-in pb-32">
+                  {/* --- HEADER: 纯净标题区 (移除大搜索框) --- */}
+                  <div className="mb-6">
+                    <div className="flex items-end justify-between mb-4">
+                      <div>
+                        <h1 className="text-2xl font-bold text-slate-900 flex items-center">
+                          Total Recall
+                          <span className="ml-3 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider border border-blue-200">
+                            Semantic Index
+                          </span>
+                        </h1>
+                        <p className="text-slate-500 text-sm mt-1">Your photographic memory across all apps.</p>
+                      </div>
+
+                      {/* 右侧小过滤器 (可选) */}
+                      <button className="text-xs font-medium text-slate-400 hover:text-blue-600 flex items-center transition-colors">
+                        <Filter className="w-3 h-3 mr-1" /> Advanced Filter
+                      </button>
+                    </div>
+
+                    {/* --- TABS: 智能聚类 (无滚动条 + 蓝色选中态) --- */}
+                    <div className="w-full overflow-hidden">
+                      <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
+                        {SMART_CLUSTERS.map((cluster) => (
+                          <button
+                            key={cluster.id}
+                            onClick={() => setRecallTab(cluster.id)}
+                            className={`flex items-center px-4 py-2 rounded-xl text-xs font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
+                              recallTab === cluster.id
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                            }`}
+                          >
+                            {cluster.label}
+                            <span
+                              className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${
+                                recallTab === cluster.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {cluster.count}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* --- AI CONTEXT CARD (只在 All 或相关时显示) --- */}
+                  <div className="mb-8 bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden card-fade-in">
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-50 px-5 py-3 border-b border-blue-100 flex items-center justify-between">
+                      <div className="flex items-center text-blue-700 font-bold text-xs">
+                        <Sparkles className="w-3.5 h-3.5 mr-2" />
+                        Latest Context: Q3 Planning
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Based on your recent activity, you are focusing on <b className="text-slate-900">Q3 Budgeting</b>. You last
+                        viewed the Excel sheet 2 hours ago during the Zoom meeting with Sarah.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* --- MEMORY GRID (真实渲染过滤后的数据) --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {(recallTab === 'All' ? ALL_MEMORIES : ALL_MEMORIES.filter((m) => m.category === recallTab)).map(
+                      (item, idx) => (
+                        <div
+                          key={item.id}
+                          className={`${GLASS_CARD} group cursor-pointer overflow-hidden flex flex-col card-fade-in hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-200 transition-all duration-300 relative`}
+                          style={{ animationDelay: `${80 + idx * 60}ms` }}
+                        >
+                          {/* Visual Snapshot */}
+                          <div
+                            className={`h-36 w-full relative ${item.image_color} group-hover:opacity-90 transition-opacity flex items-center justify-center`}
+                          >
+                            {/* Context Badge */}
+                            {item.related_to && (
+                              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg flex items-center shadow-sm z-10">
+                                <Link className="w-3 h-3 mr-1" /> {item.related_to}
+                              </div>
+                            )}
+
+                            {/* Icon Placeholder */}
+                            {item.type === 'meeting' && <Video className="w-12 h-12 text-white/50" />}
+                            {item.type === 'doc' && <FileText className="w-12 h-12 text-slate-400/50" />}
+                            {item.type === 'chat' && <MessageSquare className="w-12 h-12 text-purple-200/50" />}
+
+                            {/* App Icon */}
+                            <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-slate-700 flex items-center shadow-sm">
+                              {item.app}
+                            </div>
+                          </div>
+
+                          {/* Card Body */}
+                          <div className="p-4 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-1">
+                              <h4 className="font-bold text-slate-800 text-sm truncate w-full group-hover:text-blue-600 transition-colors">
+                                {item.title}
+                              </h4>
+                            </div>
+                            <div className="flex items-center text-[10px] text-slate-400 mb-3">
+                              <Calendar className="w-3 h-3 mr-1" /> {item.timestamp}
+                            </div>
+
+                            {/* Intelligent Highlight */}
+                            <div className="relative bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-3 group-hover:bg-blue-50/30 transition-colors">
+                              <div className="absolute -left-3 top-3 w-1 h-8 rounded-r-full bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{item.context_text}</p>
+                            </div>
+
+                            <div className="mt-auto flex items-center justify-between">
+                              <div className="flex flex-wrap gap-1">
+                                {item.keywords.map((k, i) => (
+                                  <span
+                                    key={i}
+                                    className="px-1.5 py-0.5 bg-white text-slate-500 text-[10px] rounded font-medium border border-slate-100 group-hover:border-blue-100 group-hover:text-blue-600 transition-colors"
+                                  >
+                                    #{k}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button className="text-slate-400 hover:text-blue-600">
+                                  <CornerDownRight className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ),
+                    )}
+
+                    {/* 空状态处理 */}
+                    {(recallTab === 'All' ? ALL_MEMORIES : ALL_MEMORIES.filter((m) => m.category === recallTab)).length === 0 && (
+                      <div className="col-span-full py-20 text-center">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                          <Image className="w-8 h-8" />
+                        </div>
+                        <p className="text-slate-500">No memories found in this category.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : employeeActiveTab === 'My Rhythm' ? (
+                <MyRhythmViewContent />
+              ) : (
+                <div className="flex items-center justify-center h-[500px] text-slate-400">
+                  <div className="text-center">
+                    <LayoutGrid size={48} className="mx-auto mb-4 opacity-20" />
+                    <p>Content for &quot;{employeeActiveTab}&quot; would appear here.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // Manager View Content
+          <>
         <header
           className={`mb-8 flex justify-between items-center transition-all duration-700 transform ${
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
@@ -1793,6 +2968,8 @@ export default function MohanFinalDashboard() {
               </p>
             </div>
           </div>
+        )}
+          </>
         )}
         </main>
       </div>
